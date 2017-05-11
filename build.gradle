@@ -1,0 +1,23 @@
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'com.typesafe.akka:akka-stream_2.11:2.5.1'
+    compile 'com.datastax.cassandra:cassandra-driver-core:3.2.0'
+    compile 'io.vavr:vavr:0.9.0'
+    compile 'ch.qos.logback:logback-classic:1.2.3'
+    compile 'net.javacrumbs.future-converter:future-converter-java8-guava:1.1.0'
+}
+
+task generateRandomData(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'org.kunicki.akka_streams_java8.RandomDataGenerator'
+}
+
+task runImport(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'org.kunicki.akka_streams_java8.importer.CsvImporter'
+}
