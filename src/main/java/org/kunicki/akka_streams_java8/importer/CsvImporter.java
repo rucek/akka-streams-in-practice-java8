@@ -8,6 +8,7 @@ import akka.stream.javadsl.FramingTruncation;
 import akka.stream.javadsl.StreamConverters;
 import akka.util.ByteString;
 import com.typesafe.config.Config;
+import io.vavr.collection.List;
 import io.vavr.control.Try;
 import org.kunicki.akka_streams_java8.model.InvalidReading;
 import org.kunicki.akka_streams_java8.model.Reading;
@@ -71,5 +72,18 @@ public class CsvImporter {
           .map(ByteString::utf8String)
           .mapAsync(nonIOParallelism, this::parseLine);
     });
+  }
+
+  private Flow<Reading, ValidReading, NotUsed> computeAverage() {
+    return Flow.of(Reading.class).grouped(2).mapAsyncUnordered(nonIOParallelism, readings ->
+        CompletableFuture.supplyAsync(() -> {
+          List<ValidReading> validReadings = List.ofAll(readings)
+              .filter(ValidReading.class::isInstance)
+              .map(ValidReading.class::cast);
+
+          double average = validReadings.map(ValidReading::getValue).average().getOrElse(-1.0);
+
+          return new ValidReading(readings.get(0).getId(), average);
+        }));
   }
 }
