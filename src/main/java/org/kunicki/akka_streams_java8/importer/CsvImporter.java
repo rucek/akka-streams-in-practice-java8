@@ -95,4 +95,10 @@ public class CsvImporter {
         .mapAsyncUnordered(concurrentWrites, readingRepository::save)
         .toMat(Sink.ignore(), Keep.right());
   }
+
+  private Flow<File, ValidReading, NotUsed> processSingleFile() {
+    return Flow.of(File.class)
+        .via(parseFile())
+        .via(computeAverage());
+  }
 }
