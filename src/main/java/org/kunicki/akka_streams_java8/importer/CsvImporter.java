@@ -15,6 +15,7 @@ import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.util.ByteString;
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import io.vavr.collection.List;
 import io.vavr.control.Try;
 import org.kunicki.akka_streams_java8.model.InvalidReading;
@@ -125,5 +126,16 @@ public class CsvImporter {
             logger.error("Import failed", e);
           }
         });
+  }
+
+  public static void main(String[] args) {
+    Config config = ConfigFactory.load();
+    ActorSystem system = ActorSystem.create();
+    ReadingRepository readingRepository = new ReadingRepository();
+
+    new CsvImporter(config, readingRepository, system)
+        .importFromFiles()
+        .thenAccept(d -> readingRepository.shutdown())
+        .thenAccept(d -> system.terminate());
   }
 }
