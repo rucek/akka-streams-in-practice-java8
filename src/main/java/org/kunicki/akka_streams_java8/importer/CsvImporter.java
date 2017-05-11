@@ -1,10 +1,13 @@
 package org.kunicki.akka_streams_java8.importer;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.FramingTruncation;
+import akka.stream.javadsl.Keep;
+import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.StreamConverters;
 import akka.util.ByteString;
 import com.typesafe.config.Config;
@@ -85,5 +88,11 @@ public class CsvImporter {
 
           return new ValidReading(readings.get(0).getId(), average);
         }));
+  }
+
+  private Sink<ValidReading, CompletionStage<Done>> storeReadings() {
+    return Flow.of(ValidReading.class)
+        .mapAsyncUnordered(concurrentWrites, readingRepository::save)
+        .toMat(Sink.ignore(), Keep.right());
   }
 }
