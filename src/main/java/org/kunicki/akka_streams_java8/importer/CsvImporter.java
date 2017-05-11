@@ -1,6 +1,11 @@
 package org.kunicki.akka_streams_java8.importer;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Framing;
+import akka.stream.javadsl.FramingTruncation;
+import akka.util.ByteString;
 import com.typesafe.config.Config;
 import io.vavr.control.Try;
 import org.kunicki.akka_streams_java8.model.InvalidReading;
@@ -50,4 +55,7 @@ public class CsvImporter {
           .getOrElse(new InvalidReading(id));
     });
   }
+
+  private Flow<ByteString, ByteString, NotUsed> lineDelimiter =
+      Framing.delimiter(ByteString.fromString("\n"), 128, FramingTruncation.ALLOW);
 }
