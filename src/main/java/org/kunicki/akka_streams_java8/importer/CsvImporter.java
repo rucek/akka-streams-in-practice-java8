@@ -3,11 +3,13 @@ package org.kunicki.akka_streams_java8.importer;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.FramingTruncation;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.util.ByteString;
 import com.typesafe.config.Config;
@@ -100,5 +102,23 @@ public class CsvImporter {
     return Flow.of(File.class)
         .via(parseFile())
         .via(computeAverage());
+  }
+
+  private CompletionStage<Done> importFromFiles() {
+    List<File> files = List.of(importDirectory.listFiles());
+    logger.info("Starting import of {} files from {}", files.size(), importDirectory.getPath());
+
+    long startTime = System.currentTimeMillis();
+
+    return Source.from(files)
+        .via(processSingleFile())
+        .runWith(storeReadings(), ActorMaterializer.create(system))
+        .whenComplete((d, e) -> {
+          if (d != null) {
+            logger.info("Import finished in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
+          } else {
+            logger.error("Import failed", e);
+          }
+        });
   }
 }
