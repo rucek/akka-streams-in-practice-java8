@@ -4,6 +4,8 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.FlowShape;
+import akka.stream.Graph;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.FramingTruncation;
@@ -19,6 +21,7 @@ import org.kunicki.akka_streams_java8.model.InvalidReading;
 import org.kunicki.akka_streams_java8.model.Reading;
 import org.kunicki.akka_streams_java8.model.ValidReading;
 import org.kunicki.akka_streams_java8.repository.ReadingRepository;
+import org.kunicki.akka_streams_java8.util.Balancer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,8 +113,10 @@ public class CsvImporter {
 
     long startTime = System.currentTimeMillis();
 
+    Graph<FlowShape<File, ValidReading>, NotUsed> balancer = Balancer.create(concurrentFiles, processSingleFile());
+
     return Source.from(files)
-        .via(processSingleFile())
+        .via(balancer)
         .runWith(storeReadings(), ActorMaterializer.create(system))
         .whenComplete((d, e) -> {
           if (d != null) {
